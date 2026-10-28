@@ -2,6 +2,12 @@ name: libmpv precompiled Release
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: '只重建需要更新的平台；all 完成后发布完整 Release'
+        type: choice
+        default: all
+        options: [all, android, ios]
   push:
     tags: ['libmpv-build-*']
 
@@ -10,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: libmpv-native-release
+  group: libmpv-native-${{ inputs.platform || 'all' }}
   cancel-in-progress: false
 
 jobs:
@@ -18,12 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: android
-            runner: ubuntu-22.04
-          - platform: ios
-            runner: macos-26
-    runs-on: ${{ matrix.runner }}
+        platform: ${{ fromJSON(inputs.platform == 'android' && '["android"]' || inputs.platform == 'ios' && '["ios"]' || '["android","ios"]') }}
+    runs-on: ${{ matrix.platform == 'ios' && 'macos-26' || 'ubuntu-22.04' }}
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
@@ -68,6 +70,7 @@ jobs:
 
   publish:
     needs: build
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all'
     runs-on: ubuntu-latest
     permissions:
       contents: write

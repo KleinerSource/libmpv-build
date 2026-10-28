@@ -10,6 +10,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import subprocess
+import sys
 import tarfile
 import zipfile
 
@@ -117,6 +118,8 @@ def android():
     replace(build_script, "  build $target\n", "  build $target || exit $?\n")
     for name in ("mbedtls", "dav1d", "freetype", "fribidi", "harfbuzz", "libass", "libxml2"):
         source(name, scripts / "deps" / name)
+    # MbedTLS 3.4 的 ARM crypto intrinsic 与 NDK 27 Clang 18 不兼容，使用其官方配置开关。
+    run([sys.executable, "scripts/config.py", "unset", "MBEDTLS_AESCE_C"], cwd=scripts / "deps/mbedtls")
     source("android-helper", scripts / "deps/media-kit-android-helper")
     source("ffmpeg", scripts / "deps/ffmpeg")
     mpv = source("mpv", scripts / "deps/mpv")

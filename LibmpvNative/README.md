@@ -4,6 +4,8 @@ mpv 固定为 **0.41.0**，配方版本 **libmpv-v0.41.0-r1**。`sources.lock.js
 
 在本仓库 Actions 手动运行 `libmpv precompiled Release`。Linux 构建 Android 四 ABI，macOS 构建 iOS 设备 arm64、模拟器 arm64/x86_64。两端均成功后才发布同一个 Release；App 不调用该工作流，也不需要安装原生源码构建工具。
 
+默认 `all` 构建并发布完整版本；可单独选择 `android` 或 `ios` 验证并保存该平台制品，单平台运行不会发布不完整 Release。Android 的 MbedTLS 使用便携 AES 路径，绕过其 ARM crypto intrinsic 与 NDK 27 的编译冲突；不影响视频硬解。
+
 产物：
 
 - `full-{arm64-v8a,armeabi-v7a,x86_64,x86}.jar`：libmpv 和 media-kit Android helper；保留完整 FFmpeg 解码器及 PGS。
