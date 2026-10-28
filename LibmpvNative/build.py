@@ -76,15 +76,8 @@ def patch_mpv(path, platform):
             output.write("\n#include <libavcodec/jni.h>\n"
                          "int mpv_lavc_set_java_vm(void *vm) { return av_jni_set_java_vm(vm, NULL); }\n")
     else:
-        # AVAudioSession 生命周期由 Flutter audio_session 统一管理。
-        audio = path / "audio/out/ao_audiounit.m"
-        text = audio.read_text(encoding="utf-8")
-        text, acquired = re.subn(r"    \[instance setCategory:.*?\[instance setPreferredOutputNumberOfChannels:prefChannels error:nil\];",
-                                "    // AVAudioSession is managed by the host application.", text, flags=re.S)
-        text, released = re.subn(r"    \[AVAudioSession.sharedInstance\s+setActive:NO.*?error:nil\];", "", text, flags=re.S)
-        if acquired != 1 or released != 1:
-            raise ValueError("AudioUnit 会话补丁上下文不匹配")
-        audio.write_text(text, encoding="utf-8")
+        # 保留 media-kit 原有的多实例音频会话引用计数与跳过管理选项。
+        run(["git", "-C", path, "apply", HERE / "patches/audiounit-shared-session.patch"])
 
 
 def check_ffmpeg_config(path):
