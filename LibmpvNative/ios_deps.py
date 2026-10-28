@@ -1,7 +1,6 @@
 """从官方源码构建 libmpv 的 iOS 静态依赖，与 App 原生组件完全独立。"""
 
 import os
-from pathlib import Path
 import shlex
 import subprocess
 

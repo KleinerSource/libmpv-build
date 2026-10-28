@@ -8,7 +8,6 @@ import json
 import os
 from pathlib import Path
 import plistlib
-import re
 import shutil
 import subprocess
 import tarfile
@@ -184,7 +183,7 @@ def ios(jobs):
                           "-Dcoreaudio=disabled", "-Davfoundation=disabled", "-Daudiounit=enabled",
                           "-Dgl=enabled", "-Dplain-gl=enabled", "-Dios-gl=enabled", "-Dvulkan=disabled",
                           "-Dgl-cocoa=disabled", "-Dmanpage-build=disabled",
-                          f"-Dc_link_args={env['LDFLAGS']} -Wl,-exported_symbols_list,{exports}"]),
+                          f"-Dc_link_args={env['LDFLAGS']} -framework OpenGLES -framework AVFoundation -Wl,-exported_symbols_list,{exports}"]),
         ):
             run(["meson", "setup", work / name, src, "--cross-file", cross, "--prefix", prefix,
                  "--libdir=lib", "--buildtype=release", "--wrap-mode=nodownload", "--prefer-static", *options], env=env)
@@ -194,9 +193,11 @@ def ios(jobs):
         (framework / "Headers").mkdir(parents=True)
         for header in (mpv / "include/mpv").glob("*.h"):
             shutil.copyfile(header, framework / "Headers" / header.name)
+        (framework / "Headers/Mpv.h").write_text(
+            "".join(f'#include "{p.name}"\n' for p in sorted((mpv / "include/mpv").glob("*.h"))), encoding="utf-8")
         (framework / "Modules").mkdir()
         (framework / "Modules/module.modulemap").write_text(
-            'framework module Mpv { umbrella header "client.h" export * }\n', encoding="utf-8")
+            'framework module Mpv { umbrella header "Mpv.h" export * }\n', encoding="utf-8")
         shutil.copy2(prefix / "lib/libmpv.dylib", framework / "Mpv")
         run(["install_name_tool", "-id", "@rpath/Mpv.framework/Mpv", framework / "Mpv"])
         loads = subprocess.check_output(["otool", "-L", framework / "Mpv"], text=True)
