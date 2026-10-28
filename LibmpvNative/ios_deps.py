@@ -5,7 +5,7 @@ from pathlib import Path
 import shlex
 import subprocess
 
-from build import run, source
+from build import patch_ffmpeg, run, source
 
 WORK = None  # 由独立组件构建器设置。
 SLICES = (("iphoneos", "arm64"), ("iphonesimulator", "arm64"), ("iphonesimulator", "x86_64"))
@@ -17,6 +17,8 @@ def prepare():
         path = source(name, WORK / "sources" / name)
         if name == "libass":
             run(["autoreconf", "-fi"], cwd=path)
+        elif name == "ffmpeg":
+            patch_ffmpeg(path)
 
 
 def slice_environment(sdk, arch, prefix):
@@ -104,7 +106,8 @@ def build_slice(sdk, arch, jobs):
                            f"--cc={env['CC']}", f"--sysroot={sdkroot}", f"--extra-cflags={env['CFLAGS']}",
                            f"--extra-ldflags={env['LDFLAGS']}", "--pkg-config=pkg-config", "--pkg-config-flags=--static",
                            "--enable-static", "--disable-shared", "--enable-pic", "--disable-programs", "--disable-doc",
-                           "--disable-debug", "--disable-autodetect", "--enable-version3", "--enable-network",
+                           "--disable-debug", "--disable-autodetect", "--disable-devices", "--disable-avdevice",
+                           "--enable-version3", "--enable-network",
                            "--enable-videotoolbox", "--enable-audiotoolbox", "--enable-mbedtls", "--enable-libdav1d",
                            "--enable-libass", "--enable-zlib", "--enable-bzlib", "--enable-iconv"]
             run([src / "configure", *options], cwd=build, env=env)

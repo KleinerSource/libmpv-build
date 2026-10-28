@@ -95,6 +95,19 @@ def check_ffmpeg_config(path):
             raise ValueError(f"FFmpeg 缺少解码器: {feature}")
 
 
+def patch_ffmpeg(path):
+    # 6.1.4 已包含 HLS MP4 init-section seek 修复，仅移植 DASH URL 转义修复。
+    if "pls->cur_init_section = NULL;" not in (path / "libavformat/hls.c").read_text(encoding="utf-8"):
+        raise ValueError("FFmpeg 缺少 HLS MP4 seek 修复")
+    dash = path / "libavformat/dashdec.c"
+    replace(dash, "        xmlNodeSetContent(node, root_url);",
+            "        char *content = xmlEncodeSpecialChars(NULL, root_url);\n"
+            "        xmlNodeSetContent(node, content);\n        xmlFree(content);")
+    replace(dash, "            xmlNodeSetContent(baseurl_nodes[i], tmp_str);",
+            "            char *content = xmlEncodeSpecialChars(NULL, tmp_str);\n"
+            "            xmlNodeSetContent(baseurl_nodes[i], content);\n            xmlFree(content);")
+
+
 def android():
     upstream = source("android-build")
     scripts = upstream / "buildscripts"
@@ -110,9 +123,7 @@ def android():
     sdk = Path(os.environ["ANDROID_HOME"])
     (scripts / "sdk").mkdir()
     (scripts / "sdk/android-sdk-linux").symlink_to(sdk, target_is_directory=True)
-    # 保留现有 media-kit 的 DASH URL 与 HLS MP4 seek 修复。
-    for patch in sorted((scripts / "patches/ffmpeg").glob("*.patch")):
-        run(["git", "-C", scripts / "deps/ffmpeg", "apply", patch])
+    patch_ffmpeg(scripts / "deps/ffmpeg")
     patch_mpv(mpv, "android")
     shutil.copyfile(scripts / "flavors/full.sh", scripts / "scripts/ffmpeg.sh")
     placebo_script = '''#!/bin/bash -e
