@@ -1,0 +1,55 @@
+{
+  "version": "0.41.0",
+  "release": "libmpv-v0.41.0-r1",
+  "sources": {
+    "mpv": {
+      "url": "https://github.com/mpv-player/mpv.git",
+      "commit": "41f6a645068483470267271e1d09966ca3b9f413"
+    },
+    "libplacebo": {
+      "url": "https://github.com/haasn/libplacebo.git",
+      "commit": "64c1954570f1cd57f8570a57e51fb0249b57bb90"
+    },
+    "android-build": {
+      "url": "https://github.com/media-kit/libmpv-android-video-build.git",
+      "commit": "1ecf5100ec0f75e1d0630f48851b85769c92eed2"
+    },
+    "ffmpeg": {
+      "url": "https://github.com/FFmpeg/FFmpeg.git",
+      "commit": "34277e12e80031c7f89494ba543684bc1dd0be8f"
+    },
+    "mbedtls": {
+      "url": "https://github.com/Mbed-TLS/mbedtls.git",
+      "commit": "1873d3bfc2da771672bd8e7e8f41f57e0af77f33"
+    },
+    "dav1d": {
+      "url": "https://github.com/videolan/dav1d.git",
+      "commit": "676a864a11af2c0522e1f992e770589543894686"
+    },
+    "freetype": {
+      "url": "https://github.com/freetype/freetype.git",
+      "commit": "920c5502cc3ddda88f6c7d85ee834ac611bb11cc"
+    },
+    "fribidi": {
+      "url": "https://github.com/fribidi/fribidi.git",
+      "commit": "6428d8469e536bcbb6e12c7b79ba6659371c435a"
+    },
+    "harfbuzz": {
+      "url": "https://github.com/harfbuzz/harfbuzz.git",
+      "commit": "a321c4fee56b15247c10f9aa3db7e7ccb3b8173b"
+    },
+    "libass": {
+      "url": "https://github.com/libass/libass.git",
+      "commit": "e8ad72accd3a84268275a9385beb701c9284e5b3"
+    },
+    "libxml2": {
+      "url": "https://github.com/GNOME/libxml2.git",
+      "commit": "f507d167f1755b7eaea09fb1a44d29aab828b6d1"
+    },
+    "android-helper": {
+      "url": "https://github.com/media-kit/media-kit-android-helper.git",
+      "commit": "42054e5d479f39ccbb0ae604862e2bcaf59b74c2"
+    }
+  },
+  "android_ndk": "27.2.12479018"
+}

@@ -1,0 +1,95 @@
+name: libmpv precompiled Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['libmpv-build-*']
+
+# App 构建不调用本工作流。版本/配方升级后手动构建一次。
+permissions:
+  contents: read
+
+concurrency:
+  group: libmpv-native-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            runner: ubuntu-22.04
+          - platform: ios
+            runner: macos-26
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-java@v5
+        if: matrix.platform == 'android'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        if: matrix.platform == 'android'
+      - name: Install Android toolchain
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config cmake ninja-build nasm yasm gettext
+          ndk="$(python3 -c 'import json; print(json.load(open("LibmpvNative/sources.lock.json"))["android_ndk"])')"
+          sdkmanager "ndk;$ndk" "platforms;android-35" "cmake;3.22.1"
+      - name: Install Apple toolchain
+        if: matrix.platform == 'ios'
+        run: |
+          brew install autoconf automake libtool pkg-config cmake ninja nasm texinfo
+          echo "$(brew --prefix texinfo)/bin" >> "$GITHUB_PATH"
+      - name: Install pinned build generators
+        run: python3 -m pip install meson==1.7.2 glad2==2.0.8 Jinja2==3.1.6
+      - name: Test build contracts
+        run: python3 -m unittest discover -s LibmpvNative -p 'test_*.py' -v
+      - name: Build native libraries once
+        run: python3 LibmpvNative/build.py ${{ matrix.platform }} --jobs 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libmpv-${{ matrix.platform }}
+          path: build/libmpv-native/dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: libmpv-*
+          merge-multiple: true
+          path: build/libmpv-native/dist
+      - name: Generate complete SHA-256 manifest
+        run: python3 LibmpvNative/build.py manifest
+      - name: Publish immutable component version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$(python3 -c 'import json; print(json.load(open("LibmpvNative/sources.lock.json"))["release"])')"
+          # 已存在的版本不覆盖；修订配方必须增加 rN。
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::Release $tag 已存在，请增加配方版本"
+            exit 1
+          fi
+          gh release create "$tag" build/libmpv-native/dist/* \
+            --target "$GITHUB_SHA" --title "$tag" --latest=false \
+            --notes '独立 libmpv 0.41.0：iOS 动态 XCFramework（隔离 libav/dav1d 符号），Android full 四 ABI；SHA-256 见 manifest.json。App 构建仅下载，不重新编译。'
