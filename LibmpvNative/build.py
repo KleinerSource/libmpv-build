@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -224,10 +225,13 @@ def ios(jobs):
             dependency = line.strip().split(" ")[0]
             if not dependency.startswith(("@rpath/Mpv.framework/", "/System/Library/", "/usr/lib/")):
                 raise ValueError(f"iOS 非系统动态依赖泄漏: {dependency}")
-        symbols = subprocess.check_output(["nm", "-gU", framework / "Mpv"], text=True)
-        names = [line.split()[-1] for line in symbols.splitlines() if line.split()]
-        if not {"_mpv_create", "_mpv_render_context_create"}.issubset(names) or any(not n.startswith("_mpv_") for n in names):
-            raise ValueError("iOS 导出符号不符合 mpv 隔离契约")
+        # nm 的全局符号表还可能包含 private extern；dyld 的 export trie 才是公开接口。
+        exports_text = subprocess.check_output(["xcrun", "dyld_info", "-exports", framework / "Mpv"], text=True)
+        names = set(re.findall(r"(?<!\S)_[A-Za-z_][A-Za-z0-9_.$]*", exports_text))
+        missing = {"_mpv_create", "_mpv_render_context_create"} - names
+        unexpected = {n for n in names if not n.startswith("_mpv_") and n != "__mh_dylib_header"}
+        if missing or unexpected:
+            raise ValueError(f"iOS 导出符号不符合隔离契约: missing={sorted(missing)}, unexpected={sorted(unexpected)}\n{exports_text}")
         with (framework / "Info.plist").open("wb") as output:
             plistlib.dump({"CFBundleIdentifier": "org.ohmymedia.mpv", "CFBundleExecutable": "Mpv",
                            "CFBundleName": "Mpv", "CFBundlePackageType": "FMWK", "CFBundleVersion": "1",
