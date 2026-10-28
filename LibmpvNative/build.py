@@ -111,8 +111,8 @@ def android():
     build_script = scripts / "build.sh"
     replace(build_script, "\t\t\tbuild $dep\n", "\t\t\tbuild $dep || return $?\n")
     replace(build_script, "    $BUILDSCRIPT build\n", "    $BUILDSCRIPT build || return $?\n")
-    replace(build_script, "\t\tbuild $target\n", "\t\tbuild $target || exit $?\n")
-    replace(build_script, "\tbuild $target\n", "\tbuild $target || exit $?\n")
+    replace(build_script, "    build $target\n", "    build $target || exit $?\n")
+    replace(build_script, "  build $target\n", "  build $target || exit $?\n")
     for name in ("mbedtls", "dav1d", "freetype", "fribidi", "harfbuzz", "libass", "libxml2"):
         source(name, scripts / "deps" / name)
     source("android-helper", scripts / "deps/media-kit-android-helper")
