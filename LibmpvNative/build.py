@@ -200,7 +200,7 @@ def ios(jobs):
             ("mpv", mpv, ["--default-library=shared", "-Dgpl=true", "-Dlibmpv=true", "-Dcplayer=false",
                           "-Dlua=disabled", "-Djavascript=disabled", "-Dcocoa=disabled", "-Dswift-build=disabled",
                           "-Dcoreaudio=disabled", "-Davfoundation=disabled", "-Daudiounit=enabled",
-                          "-Dgl=enabled", "-Dplain-gl=enabled", "-Dios-gl=enabled", "-Dvulkan=disabled",
+                          "-Dgl=enabled", "-Dplain-gl=enabled", "-Dios-gl=enabled", "-Dvideotoolbox-gl=disabled", "-Dvulkan=disabled",
                           "-Dgl-cocoa=disabled", "-Dmanpage-build=disabled",
                           f"-Dc_link_args={env['LDFLAGS']} -framework OpenGLES -framework AVFoundation -Wl,-exported_symbols_list,{exports}"]),
         ):
