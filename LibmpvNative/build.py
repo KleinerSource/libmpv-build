@@ -53,17 +53,19 @@ def source(name, destination=None):
     if name == "mpv":
         run(["git", "-C", path, "tag", "v" + LOCK["version"]])
     if name == "libplacebo":
-        run(["git", "-C", path, "submodule", "update", "--init", "--depth=1", "3rdparty/fast_float"])
+        run(["git", "-C", path, "submodule", "update", "--init", "--depth=1",
+             "3rdparty/fast_float", "3rdparty/Vulkan-Headers"])
     return path
 
 
 def licenses(roots):
     result = {}
     for name, root in roots.items():
-        for pattern in ("LICENSE*", "COPYING*", "LICENCE*", "docs/FTL.TXT", "docs/GPLv2.TXT"):
+        for pattern in ("LICENSE*", "COPYING*", "LICENCE*", "docs/FTL.TXT", "docs/GPLv2.TXT",
+                        "3rdparty/*/LICENSE*", "3rdparty/*/COPYING*"):
             for path in root.glob(pattern):
                 if path.is_file():
-                    result[f"{name}/{path.name}"] = path.read_bytes()
+                    result[f"{name}/{path.relative_to(root).as_posix()}"] = path.read_bytes()
     return result
 
 
