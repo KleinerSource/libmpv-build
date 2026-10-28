@@ -44,7 +44,7 @@ class BuildContracts(unittest.TestCase):
             path.write_text(config, encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "PGS"):
                 build.check_ffmpeg_config(root)
-            path.write_text(config + "#define CONFIG_HDMV_PGS_SUBTITLE_DECODER 1\n", encoding="utf-8")
+            path.write_text(config + "#define CONFIG_PGSSUB_DECODER 1\n", encoding="utf-8")
             build.check_ffmpeg_config(root)
 
 

@@ -82,7 +82,7 @@ def patch_mpv(path, platform):
 def check_ffmpeg_config(path):
     config = "\n".join((path / name).read_text(encoding="utf-8")
                        for name in ("config.h", "config_components.h"))
-    for feature in ("CONFIG_H264_DECODER", "CONFIG_HEVC_DECODER", "CONFIG_HDMV_PGS_SUBTITLE_DECODER"):
+    for feature in ("CONFIG_H264_DECODER", "CONFIG_HEVC_DECODER", "CONFIG_PGSSUB_DECODER"):
         if f"#define {feature} 1" not in config:
             raise ValueError(f"FFmpeg 缺少解码器: {feature}")
 
