@@ -37,6 +37,8 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         if: matrix.platform == 'android'
+        with:
+          packages: platform-tools
       - name: Install Android toolchain
         if: matrix.platform == 'android'
         shell: bash

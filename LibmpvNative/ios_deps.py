@@ -89,7 +89,8 @@ def build_slice(sdk, arch, jobs):
                  f"-DCMAKE_OSX_SYSROOT={sdkroot}", f"-DCMAKE_OSX_ARCHITECTURES={arch}",
                  "-DCMAKE_OSX_DEPLOYMENT_TARGET=16.0", f"-DCMAKE_INSTALL_PREFIX={prefix}",
                  "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
-                 "-DENABLE_TESTING=OFF", "-DENABLE_PROGRAMS=OFF", "-DUSE_SHARED_MBEDTLS_LIBRARY=OFF"], env=env)
+                 "-DENABLE_TESTING=OFF", "-DENABLE_PROGRAMS=OFF", "-DUSE_SHARED_MBEDTLS_LIBRARY=OFF",
+                 "-DMBEDTLS_FATAL_WARNINGS=OFF"], env=env)
             run(["cmake", "--build", build, "--parallel", jobs], env=env)
             run(["cmake", "--install", build], env=env)
         else:
