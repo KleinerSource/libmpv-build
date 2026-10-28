@@ -52,6 +52,8 @@ def source(name, destination=None):
         raise ValueError(f"源码提交不匹配: {name}")
     if name == "mpv":
         run(["git", "-C", path, "tag", "v" + LOCK["version"]])
+    if name == "libplacebo":
+        run(["git", "-C", path, "submodule", "update", "--init", "--depth=1", "3rdparty/fast_float"])
     return path
 
 
@@ -106,6 +108,11 @@ def android():
     depinfo = scripts / "include/depinfo.sh"
     replace(depinfo, "v_ndk=25.2.9519653", f"v_ndk={LOCK['android_ndk']}")
     replace(depinfo, "dep_mpv=(ffmpeg libass)", "dep_mpv=(ffmpeg libass libplacebo)")
+    build_script = scripts / "build.sh"
+    replace(build_script, "\t\t\tbuild $dep\n", "\t\t\tbuild $dep || return $?\n")
+    replace(build_script, "    $BUILDSCRIPT build\n", "    $BUILDSCRIPT build || return $?\n")
+    replace(build_script, "\t\tbuild $target\n", "\t\tbuild $target || exit $?\n")
+    replace(build_script, "\tbuild $target\n", "\tbuild $target || exit $?\n")
     for name in ("mbedtls", "dav1d", "freetype", "fribidi", "harfbuzz", "libass", "libxml2"):
         source(name, scripts / "deps" / name)
     source("android-helper", scripts / "deps/media-kit-android-helper")
@@ -130,7 +137,9 @@ DESTDIR="$prefix_dir" meson install -C _build$ndk_suffix
     replace(scripts / "scripts/mpv.sh", "  \t-Dlibplacebo=disabled \\\n", "")
     # 上游交叉文件缺少 CFLAGS/LDFLAGS，显式传入 16 KiB page-size 链接要求。
     replace(scripts / "scripts/mpv.sh", "-Dgpl=false", "-Dgpl=false -Dc_link_args=-Wl,-z,max-page-size=16384")
-    run(["bash", "build.sh"], cwd=scripts)
+    env = os.environ.copy()
+    env["NOCONFIGURE"] = "1"
+    run(["bash", "build.sh"], cwd=scripts, env=env)
     for abi in ABIS:
         suffix = {"arm64-v8a": "-arm64", "armeabi-v7a": "", "x86_64": "-x64", "x86": "-x86"}[abi]
         check_ffmpeg_config(scripts / f"deps/ffmpeg/_build{suffix}")
@@ -149,9 +158,14 @@ DESTDIR="$prefix_dir" meson install -C _build$ndk_suffix
                     raise ValueError(f"Android 缺少符号: {symbol}")
             with zipfile.ZipFile(DIST / f"full-{abi}.jar", "w", zipfile.ZIP_DEFLATED) as jar:
                 for name in apk.namelist():
-                    if name.startswith(f"lib/{abi}/") and name.endswith(".so") and not name.endswith("/libmpv.so"):
+                    if (name.startswith(f"lib/{abi}/") and name.endswith(".so")
+                            and not name.endswith(("/libmpv.so", "/libc++_shared.so"))):
                         jar.writestr(name, apk.read(name))
                 jar.write(library, f"lib/{abi}/libmpv.so")
+                triple = {"arm64-v8a": "aarch64-linux-android", "armeabi-v7a": "arm-linux-androideabi",
+                          "x86_64": "x86_64-linux-android", "x86": "i686-linux-android"}[abi]
+                runtime = tools.parent / "sysroot/usr/lib" / triple / "libc++_shared.so"
+                jar.write(runtime, f"lib/{abi}/libc++_shared.so")
                 jar.writestr("META-INF/libmpv-sources.json", json.dumps(LOCK, indent=2))
                 for name, data in notices.items():
                     jar.writestr("META-INF/licenses/" + name, data)
